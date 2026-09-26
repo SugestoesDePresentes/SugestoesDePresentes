@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>1 Aninho - Lista de Presentes</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Supabase JS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <style>
+        /* Fontes e interações */
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&display=swap');
+        
+        body {
+            font-family: 'Fredoka', sans-serif;
+            overflow-x: hidden;
+            background-color: #f0f9ff; /* Azul bem clarinho */
+        }
+        
+        button, a {
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Animação dos Balões */
+        .balloon {
+            position: fixed;
+            bottom: -100px;
+            font-size: 3rem; /* Tamanho do emoji do balão */
+            animation: floatUp linear infinite;
+            z-index: -1; /* Fica atrás do conteúdo */
+            opacity: 0.8;
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(0) rotate(-15deg); }
+            50% { transform: translateY(-50vh) rotate(15deg); }
+            100% { transform: translateY(-120vh) rotate(-15deg); }
+        }
+    </style>
+</head>
+<body class="min-h-screen text-gray-700 relative">
+
+    <!-- Container onde os balões serão injetados via JS -->
+    <div id="balloons-container"></div>
+
+    <div class="max-w-3xl mx-auto p-4 sm:p-6 lg:p-8 relative z-10">
+        
+        <!-- Cabeçalho Temático -->
+        <header class="text-center mb-10 mt-6 bg-white/80 p-8 rounded-3xl shadow-sm border-4 border-white backdrop-blur-sm">
+            <h1 class="text-5xl font-bold text-sky-500 mb-3 drop-shadow-sm">Meu 1º Aninho! 🧸</h1>
+            <p class="text-lg text-slate-600 font-medium">Escolha um presente abaixo e venha comemorar comigo!</p>
+        </header>
+
+        <!-- Formulário ESCONDIDO (Só aparece com ?admin=true no link) -->
+        <div id="adminSection" class="hidden bg-sky-100 p-6 rounded-3xl shadow-sm border-2 border-sky-200 mb-8">
+            <h2 class="text-xl font-semibold mb-4 text-sky-700 flex items-center gap-2">
+                ⚙️ Área dos Papais (Adicionar Presente)
+            </h2>
+            <form id="addGiftForm" class="flex flex-col gap-4">
+                <div>
+                    <label class="block text-sm font-semibold text-sky-700 mb-1">O que ele quer ganhar?</label>
+                    <input type="text" id="giftName" required placeholder="Ex: Carrinho, Roupinha tamanho 2..." class="w-full border-2 border-white p-3 rounded-xl focus:ring-4 focus:ring-sky-200 focus:border-sky-400 outline-none transition bg-white/90">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-sky-700 mb-1">Detalhes (Cor, tamanho, etc)</label>
+                    <input type="text" id="giftDesc" placeholder="Ex: Cor azul, M..." class="w-full border-2 border-white p-3 rounded-xl focus:ring-4 focus:ring-sky-200 focus:border-sky-400 outline-none transition bg-white/90">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-sky-700 mb-1">Link de referência da loja (opcional)</label>
+                    <input type="url" id="giftLink" placeholder="https://loja..." class="w-full border-2 border-white p-3 rounded-xl focus:ring-4 focus:ring-sky-200 focus:border-sky-400 outline-none transition bg-white/90">
+                </div>
+                <button type="submit" class="bg-sky-500 hover:bg-sky-600 text-white text-lg font-semibold py-3 px-4 rounded-xl transition-transform active:scale-95 cursor-pointer mt-2 shadow-md">
+                    Adicionar à Lista 🎈
+                </button>
+            </form>
+        </div>
+
+        <!-- Lista de Presentes -->
+        <div>
+            <h2 class="text-2xl font-bold mb-6 text-slate-700 text-center bg-white/70 py-2 rounded-full shadow-sm inline-block px-8 w-full backdrop-blur-sm">🎁 Lista de Presentes</h2>
+            
+            <div id="loading" class="text-center text-sky-600 font-medium py-8 bg-white/50 rounded-2xl">Buscando os presentes... 🧸</div>
+            
+            <div id="giftsContainer" class="grid gap-5 sm:grid-cols-2">
+                <!-- Os presentes aparecerão aqui -->
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // =========================================================================
+        // 1. ANIMAÇÃO DE BALÕES NO FUNDO
+        // =========================================================================
+        function createBalloons() {
+            const container = document.getElementById('balloons-container');
+            const emojis = ['🎈', '🧸', '✨', '🎈', '☁️', '🎈'];
+            
+            for (let i = 0; i < 12; i++) {
+                const balloon = document.createElement('div');
+                balloon.className = 'balloon';
+                balloon.innerText = emojis[Math.floor(Math.random() * emojis.length)];
+                
+                balloon.style.left = Math.random() * 100 + 'vw';
+                balloon.style.animationDuration = (Math.random() * 10 + 10) + 's'; 
+                balloon.style.animationDelay = (Math.random() * 10) + 's';
+                
+                container.appendChild(balloon);
+            }
+        }
+        createBalloons();
+
+        // =========================================================================
+        // 2. VERIFICAR MODO ADMIN (Mostrar formulário)
+        // =========================================================================
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('admin') === 'true') {
+            document.getElementById('adminSection').classList.remove('hidden');
+        }
+
+        // =========================================================================
+        // 3. CONFIGURAÇÃO DO SUPABASE (CHAVES INSERIDAS)
+        // =========================================================================
+        const SUPABASE_URL = 'https://wqesvxqjtuxahptdasjd.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndxZXN2eHFqdHV4YWhwdGRhc2pkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAzNzMwODksImV4cCI6MjEwNTk0OTA4OX0.EZtKhV1LLkE6hTiwFHPAL9c7S6viuv4NeKj-OHEt5Ho';
+
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        const form = document.getElementById('addGiftForm');
+        const giftsContainer = document.getElementById('giftsContainer');
+        const loading = document.getElementById('loading');
+
+        // =========================================================================
+        // 4. BUSCAR E EXIBIR PRESENTES
+        // =========================================================================
+        async function loadGifts() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('gifts')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+                renderGifts(data);
+            } catch (error) {
+                console.error("Erro ao buscar presentes: ", error);
+                loading.textContent = "Ops! Deu um errinho ao carregar a lista.";
+            }
+        }
+
+        function renderGifts(gifts) {
+            loading.style.display = 'none';
+            giftsContainer.innerHTML = '';
+
+            if(gifts.length === 0) {
+                giftsContainer.innerHTML = '<p class="text-slate-500 col-span-2 text-center mt-4 bg-white/50 p-4 rounded-xl">A lista ainda está vazia! Volte em breve.</p>';
+                return;
+            }
+
+            gifts.forEach(gift => {
+                const card = document.createElement('div');
+                card.className = `p-5 rounded-3xl border-4 ${gift.is_claimed ? 'bg-slate-100 border-slate-200 opacity-80' : 'bg-white border-yellow-300 shadow-sm'} flex flex-col justify-between transition-transform hover:-translate-y-1`;
+
+                const linkHtml = gift.link ? `<a href="${gift.link}" target="_blank" class="text-sky-500 text-sm hover:underline block mt-2 mb-2 font-medium">🔗 Ver modelo sugerido</a>` : '';
+                
+                const claimSection = gift.is_claimed 
+                    ? `<div class="mt-4 p-3 bg-green-100 text-green-800 text-sm rounded-xl text-center font-bold">🎉 Escolhido por: ${gift.claimed_by}</div>`
+                    : `<button onclick="claimGift('${gift.id}')" class="mt-4 w-full bg-yellow-400 hover:bg-yellow-500 text-slate-800 font-bold py-3 px-4 rounded-xl transition-transform active:scale-95 cursor-pointer shadow-sm">Eu vou dar esse!</button>`;
+
+                card.innerHTML = `
+                    <div>
+                        <h3 class="font-bold text-xl ${gift.is_claimed ? 'text-slate-500 line-through' : 'text-sky-600'}">${gift.name}</h3>
+                        ${gift.description ? `<p class="text-slate-600 text-sm mt-2 font-medium">${gift.description}</p>` : ''}
+                        ${linkHtml}
+                    </div>
+                    ${claimSection}
+                `;
+                giftsContainer.appendChild(card);
+            });
+        }
+
+        // =========================================================================
+        // 5. ADICIONAR UM NOVO PRESENTE (ADMIN)
+        // =========================================================================
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const name = document.getElementById('giftName').value;
+            const description = document.getElementById('giftDesc').value;
+            const link = document.getElementById('giftLink').value;
+
+            const submitBtn = form.querySelector('button');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Adicionando... ⏳';
+
+            const { error } = await supabaseClient
+                .from('gifts')
+                .insert([{ name, description, link }]);
+
+            if (error) {
+                alert("Erro ao adicionar presente.");
+                console.error(error);
+            } else {
+                form.reset();
+                loadGifts();
+            }
+
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Adicionar à Lista 🎈';
+        });
+
+        // =========================================================================
+        // 6. RESERVAR UM PRESENTE COM QUANTIDADE
+        // =========================================================================
+        window.claimGift = async (id) => {
+            // Pergunta 1: Nome
+            const guestName = prompt("Qual o seu nome? (Para sabermos quem vai dar esse presente maravilhoso!)");
+            if (!guestName || guestName.trim() === "") return;
+
+            // Pergunta 2: Quantidade
+            const quantity = prompt("Quantas unidades, peças ou pacotes você vai dar? (Deixe em branco se for apenas 1)");
+            
+            // Monta o texto que vai ser salvo no banco
+            let finalClaimerName = guestName.trim();
+            if (quantity && quantity.trim() !== "") {
+                finalClaimerName += ` (${quantity.trim()} unidades)`;
+            }
+
+            const { error } = await supabaseClient
+                .from('gifts')
+                .update({ is_claimed: true, claimed_by: finalClaimerName })
+                .eq('id', id);
+
+            if (error) {
+                alert("Poxa, deu um erro ao reservar. Tente novamente.");
+                console.error(error);
+            } else {
+                alert(`Obrigado, ${guestName}! Você reservou o presente com sucesso! 🎉`);
+                loadGifts();
+            }
+        };
+
+        // =========================================================================
+        // 7. ATUALIZAÇÃO EM TEMPO REAL
+        // =========================================================================
+        supabaseClient
+            .channel('public:gifts')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'gifts' }, payload => {
+                loadGifts();
+            })
+            .subscribe();
+
+        // Inicia buscando os presentes
+        loadGifts();
+    </script>
+</body>
+</html>
