@@ -43,12 +43,12 @@
         }
     </style>
 </head>
-<body class="min-h-screen text-gray-700 relative">
+<body class="min-h-screen text-gray-700 relative pb-24">
 
     <!-- Tela de Abertura -->
-    <div id="welcomeScreen" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white/95 backdrop-blur-md transition-opacity duration-500">
+    <div id="welcomeScreen" class="fixed inset-0 z-[70] flex flex-col items-center justify-center bg-white/95 backdrop-blur-md transition-opacity duration-500">
         <div class="text-center px-6 flex flex-col items-center">
-            <!-- Foto de Abertura -->
+            <!-- Foto de Abertura (mudei para .jpeg conforme você pediu) -->
             <img src="foto.jpeg" alt="Gael" class="w-40 h-40 object-cover rounded-full border-4 border-sky-300 shadow-xl mb-6 bg-sky-100" onerror="this.src='https://cdn-icons-png.flaticon.com/512/3252/3252113.png'">
             
             <h1 class="text-5xl font-bold text-sky-500 mb-8 drop-shadow-sm">Festa do Gael! 🧸</h1>
@@ -66,12 +66,41 @@
     <!-- Balões -->
     <div id="balloons-container"></div>
 
+    <!-- ========================================================================= -->
+    <!-- BOTÃO FLUTUANTE PIX E CAIXINHA (MODAL) -->
+    <!-- ========================================================================= -->
+    
+    <!-- Botão Flutuante (Fica preso na tela) -->
+    <button onclick="togglePixModal()" class="fixed bottom-6 right-6 z-50 bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-5 rounded-full shadow-lg transition-transform hover:scale-105 active:scale-95 border-2 border-white flex items-center gap-2 animate-bounce">
+        💸 <span class="hidden sm:inline">Operação</span> Fraldinha
+    </button>
+
+    <!-- Caixinha do Pix (Só aparece quando clica no botão flutuante) -->
+    <div id="pixModal" class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm px-4">
+        <div class="bg-white p-6 rounded-3xl shadow-xl border-4 border-green-100 max-w-sm w-full relative transform transition-all">
+            <!-- Botão de Fechar o Pix -->
+            <button onclick="togglePixModal()" class="absolute top-3 right-4 text-slate-400 hover:text-slate-600 font-bold text-2xl">&times;</button>
+            
+            <h2 class="text-2xl font-bold mb-2 text-green-600 text-center mt-2">💸 Cofrinho do Gael</h2>
+            <p class="text-slate-600 mb-4 font-medium text-center text-sm">Quer presentear de forma prática ou ajudar nas fraldinhas? Envie qualquer valor!</p>
+            
+            <div class="bg-slate-100 border-2 border-slate-200 p-3 rounded-xl mb-4 text-center">
+                <!-- COLOQUE SUA CHAVE PIX AQUI DENTRO -->
+                <span id="chavePix" class="text-slate-700 font-mono font-bold tracking-wide text-lg">123.456.789-00</span>
+            </div>
+            
+            <button onclick="copiarPix()" class="bg-green-500 hover:bg-green-600 text-white text-lg font-bold py-3 px-8 rounded-xl transition-transform active:scale-95 shadow-md w-full">
+                📋 Copiar Chave Pix
+            </button>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+
     <div class="max-w-3xl mx-auto p-4 sm:p-6 lg:p-8 relative z-10">
         
-        <!-- Cabeçalho Principal (Com Foto e Contagem Regressiva) -->
+        <!-- Cabeçalho Principal -->
         <header class="text-center mb-10 mt-6 bg-white/80 p-6 sm:p-8 rounded-3xl shadow-sm border-4 border-white backdrop-blur-sm relative">
-            
-            <!-- Foto no Cabeçalho -->
             <div class="w-28 h-28 mx-auto rounded-full overflow-hidden border-4 border-white shadow-md mb-4 bg-sky-100 -mt-16">
                 <img src="foto.jpeg" alt="Gael" class="w-full h-full object-cover" onerror="this.src='https://cdn-icons-png.flaticon.com/512/3252/3252113.png'">
             </div>
@@ -123,14 +152,12 @@
         <div>
             <h2 class="text-2xl font-bold mb-6 text-slate-700 text-center bg-white/80 py-2 rounded-full shadow-sm inline-block px-8 w-full backdrop-blur-sm">💌 Mural de Recadinhos</h2>
             
-            <!-- Formulário de Recado -->
             <form id="addMessageForm" class="bg-white/80 p-5 rounded-3xl shadow-sm border-2 border-white backdrop-blur-sm mb-6 flex flex-col gap-3">
                 <input type="text" id="msgName" required placeholder="Seu nome" class="w-full border-2 border-slate-100 p-3 rounded-xl focus:ring-4 focus:ring-pink-200 outline-none transition bg-white text-sm">
                 <textarea id="msgContent" required placeholder="Deixe um recadinho especial para o Gael..." rows="3" class="w-full border-2 border-slate-100 p-3 rounded-xl focus:ring-4 focus:ring-pink-200 outline-none transition bg-white text-sm resize-none"></textarea>
                 <button type="submit" class="bg-pink-400 hover:bg-pink-500 text-white text-lg font-semibold py-3 px-4 rounded-xl transition-transform active:scale-95 shadow-md">Enviar Recadinho ❤️</button>
             </form>
 
-            <!-- Lista de Recados -->
             <div id="messagesContainer" class="flex flex-col gap-4">
                 <div class="text-center text-sky-600 text-sm font-medium py-4">Carregando recadinhos...</div>
             </div>
@@ -140,7 +167,25 @@
 
     <script>
         // =========================================================================
-        // 0. CONTROLE DA TELA DE ABERTURA E MÚSICA
+        // 0. CONTROLE DO PIX FLUTUANTE
+        // =========================================================================
+        function togglePixModal() {
+            const modal = document.getElementById('pixModal');
+            modal.classList.toggle('hidden');
+        }
+
+        function copiarPix() {
+            const chave = document.getElementById('chavePix').innerText;
+            navigator.clipboard.writeText(chave).then(() => {
+                alert("Chave Pix copiada com sucesso! 💚 Só colar no app do seu banco.");
+                togglePixModal(); // Fecha a caixinha depois de copiar
+            }).catch(err => {
+                alert("Ops! Seu celular bloqueou a cópia automática. Você pode selecionar a chave e copiar manualmente.");
+            });
+        }
+
+        // =========================================================================
+        // 1. TELA DE ABERTURA E MÚSICA
         // =========================================================================
         const welcomeScreen = document.getElementById('welcomeScreen');
         const enterSiteBtn = document.getElementById('enterSiteBtn');
@@ -153,9 +198,8 @@
         });
 
         // =========================================================================
-        // 1. CONTAGEM REGRESSIVA (Data da Festa: 10/10 as 13:00)
+        // 2. CONTAGEM REGRESSIVA (Data da Festa: 10/10/2026 as 13:00)
         // =========================================================================
-        // Ajuste o ano se a festa for no ano que vem! Formato em inglês: "Mês Dia, Ano Hora:Minuto:Segundo"
         const countDownDate = new Date("Oct 10, 2026 13:00:00").getTime();
 
         const x = setInterval(function() {
@@ -178,7 +222,7 @@
         }, 1000);
 
         // =========================================================================
-        // 2. BALÕES NO FUNDO
+        // 3. BALÕES NO FUNDO
         // =========================================================================
         function createBalloons() {
             const container = document.getElementById('balloons-container');
@@ -195,46 +239,42 @@
         }
         createBalloons();
 
-        // Admin check
         if (new URLSearchParams(window.location.search).get('admin') === 'true') {
             document.getElementById('adminSection').classList.remove('hidden');
         }
 
         // =========================================================================
-        // 3. SUPABASE E PRESENTES
+        // 4. SUPABASE (PRESENTES E RECADOS)
         // =========================================================================
         const SUPABASE_URL = 'https://wqesvxqjtuxahptdasjd.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndxZXN2eHFqdHV4YWhwdGRhc2pkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAzNzMwODksImV4cCI6MjEwNTk0OTA4OX0.EZtKhV1LLkE6hTiwFHPAL9c7S6viuv4NeKj-OHEt5Ho';
         const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // Lógica de Presentes (Igual estava antes)
         const giftsContainer = document.getElementById('giftsContainer');
         const loading = document.getElementById('loading');
+        const messagesContainer = document.getElementById('messagesContainer');
 
         async function loadGifts() {
             try {
                 const { data, error } = await supabaseClient.from('gifts').select('*').order('created_at', { ascending: false });
                 if (error) throw error;
-                renderGifts(data);
+                
+                loading.style.display = 'none';
+                giftsContainer.innerHTML = '';
+                if(data.length === 0) { giftsContainer.innerHTML = '<p class="col-span-2 text-center text-slate-500">Lista vazia.</p>'; return; }
+
+                data.forEach(gift => {
+                    const card = document.createElement('div');
+                    card.className = `p-5 rounded-3xl border-4 ${gift.is_claimed ? 'bg-slate-100/90 border-slate-200 opacity-80' : 'bg-white/90 border-yellow-300 shadow-sm'} backdrop-blur-sm flex flex-col justify-between`;
+                    const linkHtml = gift.link ? `<a href="${gift.link}" target="_blank" class="text-sky-500 text-sm hover:underline block mt-2 mb-2">🔗 Ver modelo sugerido</a>` : '';
+                    const claimSection = gift.is_claimed 
+                        ? `<div class="mt-4 p-3 bg-green-100 text-green-800 text-sm rounded-xl text-center font-bold">🎉 Escolhido por: ${gift.claimed_by}</div>`
+                        : `<button onclick="claimGift('${gift.id}')" class="mt-4 w-full bg-yellow-400 hover:bg-yellow-500 text-slate-800 font-bold py-3 px-4 rounded-xl transition-transform active:scale-95 shadow-sm">Eu vou dar esse!</button>`;
+
+                    card.innerHTML = `<div><h3 class="font-bold text-xl ${gift.is_claimed ? 'text-slate-500 line-through' : 'text-sky-600'}">${gift.name}</h3>${gift.description ? `<p class="text-slate-600 text-sm mt-2">${gift.description}</p>` : ''}${linkHtml}</div>${claimSection}`;
+                    giftsContainer.appendChild(card);
+                });
             } catch (error) { loading.textContent = "Erro ao carregar."; }
-        }
-
-        function renderGifts(gifts) {
-            loading.style.display = 'none';
-            giftsContainer.innerHTML = '';
-            if(gifts.length === 0) { giftsContainer.innerHTML = '<p class="col-span-2 text-center text-slate-500">Lista vazia.</p>'; return; }
-
-            gifts.forEach(gift => {
-                const card = document.createElement('div');
-                card.className = `p-5 rounded-3xl border-4 ${gift.is_claimed ? 'bg-slate-100/90 border-slate-200 opacity-80' : 'bg-white/90 border-yellow-300 shadow-sm'} backdrop-blur-sm flex flex-col justify-between`;
-                const linkHtml = gift.link ? `<a href="${gift.link}" target="_blank" class="text-sky-500 text-sm hover:underline block mt-2 mb-2">🔗 Ver modelo sugerido</a>` : '';
-                const claimSection = gift.is_claimed 
-                    ? `<div class="mt-4 p-3 bg-green-100 text-green-800 text-sm rounded-xl text-center font-bold">🎉 Escolhido por: ${gift.claimed_by}</div>`
-                    : `<button onclick="claimGift('${gift.id}')" class="mt-4 w-full bg-yellow-400 hover:bg-yellow-500 text-slate-800 font-bold py-3 px-4 rounded-xl transition-transform active:scale-95 shadow-sm">Eu vou dar esse!</button>`;
-
-                card.innerHTML = `<div><h3 class="font-bold text-xl ${gift.is_claimed ? 'text-slate-500 line-through' : 'text-sky-600'}">${gift.name}</h3>${gift.description ? `<p class="text-slate-600 text-sm mt-2">${gift.description}</p>` : ''}${linkHtml}</div>${claimSection}`;
-                giftsContainer.appendChild(card);
-            });
         }
 
         document.getElementById('addGiftForm').addEventListener('submit', async (e) => {
@@ -256,11 +296,6 @@
             alert(`Obrigado, ${guestName}! 🎉`); loadGifts();
         };
 
-        // =========================================================================
-        // 4. MURAL DE RECADOS (Novo)
-        // =========================================================================
-        const messagesContainer = document.getElementById('messagesContainer');
-        
         async function loadMessages() {
             try {
                 const { data, error } = await supabaseClient.from('messages').select('*').order('created_at', { ascending: false });
@@ -275,8 +310,6 @@
                 data.forEach(msg => {
                     const msgEl = document.createElement('div');
                     msgEl.className = 'bg-white/90 p-4 rounded-2xl border-l-4 border-pink-400 shadow-sm backdrop-blur-sm';
-                    
-                    // Converte a data para um formato legal
                     const dateObj = new Date(msg.created_at);
                     const formattedDate = dateObj.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', hour: '2-digit', minute:'2-digit'});
 
@@ -290,8 +323,7 @@
                     messagesContainer.appendChild(msgEl);
                 });
             } catch (error) {
-                console.log("Ainda não criou a tabela messages, aguardando...");
-                messagesContainer.innerHTML = '<p class="text-red-400 text-center text-sm py-4">Configure a tabela no Supabase para ver os recados!</p>';
+                console.log("Aguardando configuração da tabela messages...");
             }
         }
 
@@ -314,9 +346,7 @@
             btn.disabled = false; btn.textContent = 'Enviar Recadinho ❤️';
         });
 
-        // =========================================================================
-        // 5. ATUALIZAÇÕES EM TEMPO REAL
-        // =========================================================================
+        // Atualização em tempo real
         supabaseClient.channel('public:gifts').on('postgres_changes', { event: '*', schema: 'public', table: 'gifts' }, loadGifts).subscribe();
         supabaseClient.channel('public:messages').on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, loadMessages).subscribe();
 
