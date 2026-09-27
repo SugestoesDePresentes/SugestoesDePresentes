@@ -33,9 +33,9 @@
         .balloon {
             position: fixed;
             bottom: -100px;
-            font-size: 3rem; /* Tamanho do emoji do balão */
+            font-size: 3rem;
             animation: floatUp linear infinite;
-            z-index: -1; /* Fica atrás do conteúdo */
+            z-index: -1;
             opacity: 0.8;
         }
 
@@ -48,18 +48,23 @@
 </head>
 <body class="min-h-screen text-gray-700 relative">
 
-    <!-- Container onde os balões serão injetados via JS -->
+    <!-- Tag de Áudio (música oculta e em loop) -->
+    <audio id="bgMusic" autoplay loop>
+        <source src="musica.mp3" type="audio/mpeg">
+    </audio>
+
+    <!-- Container dos balões -->
     <div id="balloons-container"></div>
 
     <div class="max-w-3xl mx-auto p-4 sm:p-6 lg:p-8 relative z-10">
         
-        <!-- Cabeçalho Temático -->
+        <!-- Cabeçalho -->
         <header class="text-center mb-10 mt-6 bg-white/80 p-8 rounded-3xl shadow-sm border-4 border-white backdrop-blur-sm">
             <h1 class="text-5xl font-bold text-sky-500 mb-3 drop-shadow-sm">Meu 1º Aninho! 🧸</h1>
             <p class="text-lg text-slate-600 font-medium">Escolha um presente abaixo e venha comemorar comigo!</p>
         </header>
 
-        <!-- Formulário ESCONDIDO (Só aparece com ?admin=true no link) -->
+        <!-- Formulário ADMIN -->
         <div id="adminSection" class="hidden bg-sky-100/90 backdrop-blur-sm p-6 rounded-3xl shadow-sm border-2 border-sky-200 mb-8">
             <h2 class="text-xl font-semibold mb-4 text-sky-700 flex items-center gap-2">
                 ⚙️ Área dos Papais (Adicionar Presente)
@@ -98,6 +103,28 @@
 
     <script>
         // =========================================================================
+        // 0. FORÇAR MÚSICA DE FUNDO INVISÍVEL
+        // =========================================================================
+        const bgMusic = document.getElementById('bgMusic');
+        
+        // Função para tentar tocar a música silenciosamente
+        const startAudio = () => {
+            bgMusic.play().catch(() => {
+                // Navegador bloqueou silenciosamente (comportamento normal)
+            });
+        };
+
+        // Escuta o primeiro toque, clique ou rolagem na tela e força a música
+        const events = ['click', 'touchstart', 'scroll'];
+        events.forEach(event => {
+            document.body.addEventListener(event, function audioInit() {
+                startAudio();
+                // Remove os event listeners depois que a música tocar a primeira vez
+                events.forEach(e => document.body.removeEventListener(e, audioInit));
+            }, { once: true });
+        });
+
+        // =========================================================================
         // 1. ANIMAÇÃO DE BALÕES NO FUNDO
         // =========================================================================
         function createBalloons() {
@@ -119,7 +146,7 @@
         createBalloons();
 
         // =========================================================================
-        // 2. VERIFICAR MODO ADMIN (Mostrar formulário)
+        // 2. VERIFICAR MODO ADMIN
         // =========================================================================
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('admin') === 'true') {
@@ -127,7 +154,7 @@
         }
 
         // =========================================================================
-        // 3. CONFIGURAÇÃO DO SUPABASE (CHAVES INSERIDAS)
+        // 3. CONFIGURAÇÃO DO SUPABASE
         // =========================================================================
         const SUPABASE_URL = 'https://wqesvxqjtuxahptdasjd.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndxZXN2eHFqdHV4YWhwdGRhc2pkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAzNzMwODksImV4cCI6MjEwNTk0OTA4OX0.EZtKhV1LLkE6hTiwFHPAL9c7S6viuv4NeKj-OHEt5Ho';
@@ -221,14 +248,11 @@
         // 6. RESERVAR UM PRESENTE COM QUANTIDADE
         // =========================================================================
         window.claimGift = async (id) => {
-            // Pergunta 1: Nome
             const guestName = prompt("Qual o seu nome? (Para sabermos quem vai dar esse presente maravilhoso!)");
             if (!guestName || guestName.trim() === "") return;
 
-            // Pergunta 2: Quantidade
             const quantity = prompt("Quantas unidades, peças ou pacotes você vai dar? (Deixe em branco se for apenas 1)");
             
-            // Monta o texto que vai ser salvo no banco
             let finalClaimerName = guestName.trim();
             if (quantity && quantity.trim() !== "") {
                 finalClaimerName += ` (${quantity.trim()} unidades)`;
