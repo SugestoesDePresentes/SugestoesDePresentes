@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>1 Aninho - Sugestões De Presentes</title>
+    <title>1 Aninho do Gael - Sugestões De Presentes</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Supabase JS CDN -->
@@ -16,7 +16,6 @@
         body {
             font-family: 'Fredoka', sans-serif;
             overflow-x: hidden;
-            /* Papel de parede configurado aqui */
             background-image: linear-gradient(rgba(240, 249, 255, 0.4), rgba(240, 249, 255, 0.4)), url('https://http2.mlstatic.com/D_NQ_NP_894656-MLB47701582350_092021-O.webp');
             background-size: cover;
             background-position: center;
@@ -48,23 +47,33 @@
 </head>
 <body class="min-h-screen text-gray-700 relative">
 
-    <!-- Tag de Áudio (música oculta e em loop) -->
-    <audio id="bgMusic" loop autoplay>
+    <!-- Tela de Abertura (Obriga a interação para tocar a música) -->
+    <div id="welcomeScreen" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white/95 backdrop-blur-md transition-opacity duration-500">
+        <div class="text-center px-6">
+            <h1 class="text-5xl font-bold text-sky-500 mb-8 drop-shadow-sm">Festa do Gael! 🧸</h1>
+            <button id="enterSiteBtn" class="bg-sky-500 hover:bg-sky-600 text-white text-xl sm:text-2xl font-bold py-5 px-8 rounded-full shadow-lg transition-transform hover:scale-105 active:scale-95 animate-bounce border-4 border-white">
+                Abrir sugestões de presentes para o Gael 🎁
+            </button>
+        </div>
+    </div>
+
+    <!-- Tag de Áudio (música) - Atualizado para .m4a -->
+    <audio id="bgMusic" loop>
         <source src="musica.m4a" type="audio/mp4">
     </audio>
 
-    <!-- Container dos balões -->
+    <!-- Container onde os balões serão injetados via JS -->
     <div id="balloons-container"></div>
 
     <div class="max-w-3xl mx-auto p-4 sm:p-6 lg:p-8 relative z-10">
         
-        <!-- Cabeçalho -->
+        <!-- Cabeçalho Temático -->
         <header class="text-center mb-10 mt-6 bg-white/80 p-8 rounded-3xl shadow-sm border-4 border-white backdrop-blur-sm">
             <h1 class="text-5xl font-bold text-sky-500 mb-3 drop-shadow-sm">Meu 1º Aninho! 🧸</h1>
             <p class="text-lg text-slate-600 font-medium">Escolha um presente abaixo e venha comemorar comigo!</p>
         </header>
 
-        <!-- Formulário ADMIN -->
+        <!-- Formulário ESCONDIDO (Só aparece com ?admin=true no link) -->
         <div id="adminSection" class="hidden bg-sky-100/90 backdrop-blur-sm p-6 rounded-3xl shadow-sm border-2 border-sky-200 mb-8">
             <h2 class="text-xl font-semibold mb-4 text-sky-700 flex items-center gap-2">
                 ⚙️ Área dos Papais (Adicionar Presente)
@@ -103,25 +112,23 @@
 
     <script>
         // =========================================================================
-        // 0. FORÇAR MÚSICA DE FUNDO INVISÍVEL
+        // 0. CONTROLE DA TELA DE ABERTURA E MÚSICA
         // =========================================================================
+        const welcomeScreen = document.getElementById('welcomeScreen');
+        const enterSiteBtn = document.getElementById('enterSiteBtn');
         const bgMusic = document.getElementById('bgMusic');
-        
-        // Função para tentar tocar a música silenciosamente
-        const startAudio = () => {
-            bgMusic.play().catch(() => {
-                // Navegador bloqueou silenciosamente (comportamento normal)
-            });
-        };
 
-        // Escuta o primeiro toque, clique ou rolagem na tela e força a música
-        const events = ['click', 'touchstart', 'scroll'];
-        events.forEach(event => {
-            document.body.addEventListener(event, function audioInit() {
-                startAudio();
-                // Remove os event listeners depois que a música tocar a primeira vez
-                events.forEach(e => document.body.removeEventListener(e, audioInit));
-            }, { once: true });
+        enterSiteBtn.addEventListener('click', () => {
+            // Toca a música (como o usuário clicou no botão, o navegador permite 100%)
+            bgMusic.play().catch(e => console.log("Erro ao tocar música: ", e));
+            
+            // Faz a tela de abertura sumir suavemente
+            welcomeScreen.classList.add('opacity-0');
+            
+            // Remove a tela do código após a transição terminar para não atrapalhar os cliques na lista
+            setTimeout(() => {
+                welcomeScreen.classList.add('hidden');
+            }, 500); 
         });
 
         // =========================================================================
@@ -146,7 +153,7 @@
         createBalloons();
 
         // =========================================================================
-        // 2. VERIFICAR MODO ADMIN
+        // 2. VERIFICAR MODO ADMIN (Mostrar formulário)
         // =========================================================================
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('admin') === 'true') {
@@ -282,7 +289,6 @@
             })
             .subscribe();
 
-        // Inicia buscando os presentes
         loadGifts();
     </script>
 </body>
